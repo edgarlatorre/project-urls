@@ -1,16 +1,12 @@
 local Path = require("plenary.path")
 
-local Menu = {}
+local M = {}
 
-function Menu:new()
-  return setmetatable({
-    window_id = nil,
-    buffer = nil,
-    content = Menu:get_content(),
-  }, self)
-end
+local buffer = nil
+local window_id = nil
+local content = nil
 
-function Menu:get_content(path)
+local function get_content(path)
   if path == nil then
     path = vim.loop.cwd() .. "/.project-urls"
   end
@@ -29,37 +25,35 @@ function Menu:get_content(path)
   return urls
 end
 
-function Menu:open_menu()
-  if self.content == nil then
-    self.content = Menu:get_content()
+function M.current_content()
+  return content
+end
+
+function M.open_menu()
+  if content == nil then
+    content = get_content()
   end
 
-  if self.buffer == nil then
-    self.buffer = vim.api.nvim_create_buf(false, true)
+  if buffer == nil then
+    buffer = vim.api.nvim_create_buf(false, true)
   end
 
+  vim.api.nvim_buf_set_keymap(buffer, "n", "<ESC>", "<Cmd>lua require('project-urls').close()<CR>", { silent = true })
   vim.api.nvim_buf_set_keymap(
-    self.buffer,
-    "n",
-    "<ESC>",
-    "<Cmd>lua require('project-urls'):close()<CR>",
-    { silent = true }
-  )
-  vim.api.nvim_buf_set_keymap(
-    self.buffer,
+    buffer,
     "n",
     "<CR>",
-    "<Cmd>lua require('project-urls'):open_url()<CR>",
+    "<Cmd>lua require('project-urls').open_url()<CR>",
     { silent = true }
   )
 
-  vim.api.nvim_buf_set_lines(self.buffer, 0, -1, true, self.content)
-  vim.api.nvim_buf_set_option(self.buffer, "readonly", true)
+  vim.api.nvim_buf_set_lines(buffer, 0, -1, true, content)
+  vim.api.nvim_buf_set_option(buffer, "readonly", true)
 
   local height = 8
   local width = 69
 
-  vim.api.nvim_open_win(self.buffer, true, {
+  vim.api.nvim_open_win(buffer, true, {
     relative = "editor",
     row = math.floor(((vim.o.lines - height) / 2) - 1),
     col = math.floor((vim.o.columns - width) / 2),
@@ -69,29 +63,29 @@ function Menu:open_menu()
   })
 end
 
-function Menu:close()
-  if self.buffer ~= nil and vim.api.nvim_buf_is_valid(self.buffer) then
-    vim.api.nvim_buf_delete(self.buffer, { force = true })
+function M.close()
+  if buffer ~= nil and vim.api.nvim_buf_is_valid(buffer) then
+    vim.api.nvim_buf_delete(buffer, { force = true })
   end
 
-  if self.window_id ~= nil and vim.api.nvim_win_is_valid(self.window_id) then
-    vim.api.nvim_win_close(self.window_id, true)
+  if window_id ~= nil and vim.api.nvim_win_is_valid(window_id) then
+    vim.api.nvim_win_close(window_id, true)
   end
 
-  self.window_id = nil
-  self.buffer = nil
+  window_id = nil
+  buffer = nil
 end
 
-function Menu:open_url()
+function M.open_url()
   local index = vim.fn.line(".")
 
-  for content_idx, url in ipairs(self.content) do
+  for content_idx, url in ipairs(content) do
     if index == content_idx then
       vim.cmd(":silent! !open " .. url)
-      self:close()
+      M.close()
       break
     end
   end
 end
 
-return Menu
+return M
