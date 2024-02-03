@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  testing:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create .project-urls file
+        run: echo "https://github.com/edgarlatorre/project-urls" > .project-urls
+      - name: Setup neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+      - name: add plenary.nvim
+        run: |
+            git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+            ln -s "$(pwd)" ~/.local/share/nvim/site/pack/vendor/start
+      - name: Run tests
+        run: |
+          make test
