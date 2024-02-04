@@ -79,6 +79,10 @@ end
 function M.open_url()
   local index = vim.fn.line(".")
 
+  if content == nil then
+    return
+  end
+
   for content_idx, url in ipairs(content) do
     if index == content_idx then
       vim.cmd(":silent! !open " .. url)
